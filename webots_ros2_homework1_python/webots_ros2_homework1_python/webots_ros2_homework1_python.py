@@ -9,10 +9,7 @@ from nav_msgs.msg import Odometry
 # import Quality of Service library, to set the correct profile and reliability in order to read sensor data.
 from rclpy.qos import ReliabilityPolicy, QoSProfile
 import math
-import time
-from rclpy.duration import Duration
-import random
-import pandas as pd
+
 
 
 
@@ -36,8 +33,16 @@ class RandomWalk(Node):
         self.scan_cleaned = []
         self.x_y_values = []
         self.stall = False
+        self.distance = True # Used to switch between angular/distance
         self.startx = -1000.0
         self.starty = -1000.0
+        self.desired_distance = 1.0 # Enter meter distance you want traveled
+        self.desired_angular = 3.14 # Enter radians turned
+        self.speed = 0.15 # Enter linear speed for robot m/s -> .15 or .075
+        self.angular_speed = 0.5236 # Angular speed r/s -> 0.5236 for 30 dps | 2.094 for 120 dps
+        self.orientation=''
+        self.start_yaw = -5
+        self.total_radians=''
         self.prevx = -1000.0
         self.prevy = -1000.0
         self.total_distance = 0.0
@@ -85,140 +90,75 @@ class RandomWalk(Node):
         orientation = msg2.pose.pose.orientation
         (posx, posy, posz) = (position.x, position.y, position.z)
         (qx, qy, qz, qw) = (orientation.x, orientation.y, orientation.z, orientation.w)
-        self.get_logger().info('self position: {},{},{}'.format(posx,posy,posz))
+        #self.get_logger().info('self position: {},{},{}'.format(posx,posy,posz))
         # similarly for twist message if you need
         self.pose_saved=position
-        
-        #Example of how to identify a stall..need better tuned position deltas; wheels spin and example fast
-        #diffX = math.fabs(self.pose_saved.x- position.x)
-        #diffY = math.fabs(self.pose_saved.y - position.y)
-        #if (diffX < 0.0001 and diffY < 0.0001):
-           #self.stall = True
-        #else:
-           #self.stall = False
+        self.orientation=orientation
            
         return None
         
     def timer_callback(self):
-        if (len(self.scan_cleaned)==0):
-            self.turtlebot_moving = False
-            return
-        
-        left_lidar_min = min(self.scan_cleaned[LEFT_SIDE_INDEX:LEFT_FRONT_INDEX])
-        right_lidar_min = min(self.scan_cleaned[RIGHT_FRONT_INDEX:RIGHT_SIDE_INDEX])
-        front_lidar_min = min(self.scan_cleaned[LEFT_FRONT_INDEX:RIGHT_FRONT_INDEX])
-
-        self.get_logger().info('left scan slice: "%s"'%  left_lidar_min)
-        self.get_logger().info('front scan slice: "%s"'%  front_lidar_min)
-        self.get_logger().info('right scan slice: "%s"'%  right_lidar_min)
-
-        self.get_logger().info('ANGULAR: "%s"'%  right_lidar_min)
 
         if self.startx < -800:
             self.startx = self.pose_saved.x
             self.starty = self.pose_saved.y
             self.prevx = self.pose_saved.x
             self.prevy = self.pose_saved.y
-        
-        if front_lidar_min < (SAFE_STOP_DISTANCE + 0.35) :
-            
-            if (self.random_turn % 8 == 0):
-                self.get_logger().info('RANDOM TURN')
-                randomNum = random.randint(0,1)
-                if (randomNum == 0) and (self.turtlebot_turning == False):
-                    self.get_logger().info('RANDOM L')
-                    self.cmd.angular.z = 0.1      # Turn left at 0.5 rad/s
-                    self.turtlebot_turning = True
-                    self.random_turn = self.random_turn + 1
-                elif (self.turtlebot_turning == False):
-                    self.get_logger().info('RANDOM R')
-                    self.cmd.angular.z = -0.1  # Turn right at 0.5 rad/s
-                    self.turtlebot_turning = True
-                    self.random_turn = self.random_turn + 1
 
-            elif (left_lidar_min > right_lidar_min) and (self.turtlebot_turning == False): #and left_lidar_min > front_lidar_min
-                self.get_logger().info('left lidar greatest distance!')
-
-                # if left_lidar_min > front_lidar_min:
-                #self.cmd.linear.x = 0.0
-                self.cmd.angular.z = 0.1  # Turn left at 0.5 rad/s
-                self.turtlebot_turning = True
-                self.random_turn = self.random_turn + 1
-                #self.publisher_.publish(self.cmd)
-                #self.turtlebot_moving = True
-                
-            elif (right_lidar_min > left_lidar_min) and (self.turtlebot_turning == False): #and right_lidar_min > front_lidar_min
-                self.get_logger().info('right lidar greatest distance!')
-
-                #if right_lidar_min > front_lidar_min:
-                #self.cmd.linear.x = 0.0
-                self.cmd.angular.z = -0.1 # Turn right at 0.5 rad/s
-                self.turtlebot_turning = True
-                self.random_turn = self.random_turn + 1
-                #self.publisher_.publish(self.cmd)
-                #self.turtlebot_moving = True
-
-            self.total_distance = self.total_distance + math.sqrt((self.pose_saved.x - self.prevx)**2 + (self.pose_saved.y - self.prevy)**2)
-            self.prevx = self.pose_saved.x
-            self.prevy = self.pose_saved.y
-
-            if self.furthest_distance < math.sqrt((self.startx - self.pose_saved.x)**2 + (self.starty - self.pose_saved.y)**2):
-                self.furthest_distance = math.sqrt((self.startx - self.pose_saved.x)**2 + (self.starty - self.pose_saved.y)**2)
-
-            self.cmd.linear.x = 0.0  
-            self.publisher_.publish(self.cmd)
-            self.turtlebot_moving = True
-            #self.x_y_values.append({'Column 1': self.pose_saved.x, 'Column 2': self.pose_saved.y})
-            #df = pd.DataFrame(self.x_y_values)
-            #df.to_csv('/mnt/c/CS560/f24_robotics/webots_ros2_homework1_python/webots_ros2_homework1_python/output.csv', index=False)
-            # self.get_logger().info('Publishing: "%s"' % self.cmd)
-            self.get_logger().info('TOTAL DISTANCE : %f' % self.total_distance)
-            self.get_logger().info('FURTHEST DISTANCE : %f' % self.furthest_distance)
-            # self.get_logger().info(f'x_y_values: {self.x_y_values}')
-            return
-                    #return
-        # elif front_lidar_min < LIDAR_AVOID_DISTANCE:
-        #         self.cmd.linear.x = 0.07 
-        #         if (right_lidar_min > left_lidar_min):
-        #            self.cmd.angular.z = -0.3
-            #        else:
-        #            self.cmd.angular.z = 0.3
-        #         self.publisher_.publish(self.cmd)
-        #         self.get_logger().info('Turning')
-        #         self.turtlebot_moving = True
-        else: # choose furthest available route
-                self.get_logger().info('Free range, just runnin')
-                self.cmd.linear.x = 0.3
+        if self.distance: # Used to switch between straight and turning
+            if math.sqrt((self.startx - self.pose_saved.x)**2 + (self.starty - self.pose_saved.y)**2) < (self.desired_distance - 0.05) :
+                self.get_logger().info('LESS THAN 1M, CONTINUE')
+                self.cmd.linear.x = self.speed
+                self.cmd.angular.z = 0.0
+                self.turtlebot_turning = False
+                self.publisher_.publish(self.cmd)
+                self.turtlebot_moving = True
+            else:
+                self.get_logger().info('1M REACHED, STOP')
+                self.cmd.linear.x = 0.0
                 self.cmd.angular.z = 0.0
                 self.turtlebot_turning = False
                 self.publisher_.publish(self.cmd)
                 self.turtlebot_moving = True
 
-                self.total_distance = self.total_distance + math.sqrt((self.pose_saved.x - self.prevx)**2 + (self.pose_saved.y - self.prevy)**2)
-                self.prevx = self.pose_saved.x
-                self.prevy = self.pose_saved.y
+            self.get_logger().info('DISTANCE: "%s"'%  math.sqrt((self.startx - self.pose_saved.x)**2 + (self.starty - self.pose_saved.y)**2))
+        else:
+            siny_cosp = 2 * (self.orientation.w * self.orientation.z + self.orientation.x * self.orientation.y)
+            cosy_cosp = 1 - 2 * (self.orientation.y * self.orientation.y + self.orientation.z * self.orientation.z)
+            yaw = math.atan2(siny_cosp, cosy_cosp)
 
-                if self.furthest_distance < math.sqrt((self.startx - self.pose_saved.x)**2 + (self.starty - self.pose_saved.y)**2):
-                    self.furthest_distance = math.sqrt((self.startx - self.pose_saved.x)**2 + (self.starty - self.pose_saved.y)**2)
+            if self.start_yaw < -4:
+                self.start_yaw = yaw
+                self.prev_yaw = yaw
+                self.total_radians = 0.0
 
-                self.get_logger().info('TOTAL DISTANCE : %f' % self.total_distance)
-                self.get_logger().info('FURTHEST DISTANCE : %f' % self.furthest_distance)
-                #self.x_y_values.append({'Column 1': self.pose_saved.x, 'Column 2': self.pose_saved.y})
-                #df = pd.DataFrame(self.x_y_values)
-                #df.to_csv('/mnt/c/CS560/f24_robotics/webots_ros2_homework1_python/webots_ros2_homework1_python/output.csv', index=False)
-                # self.get_logger().info(f'x_y_values: {self.x_y_values}')
-                return
+            delta_yaw = yaw - self.prev_yaw
 
-            
-        self.get_logger().info('Distance of the obstacle : %f' % front_lidar_min)
-        self.get_logger().info('I receive: "%s"' %
-                               str(self.odom_data))
-        if self.stall == True:
-           self.get_logger().info('Stall reported')
+            if delta_yaw > math.pi:
+                delta_yaw -= 2 * math.pi
+            elif delta_yaw < -math.pi:
+                delta_yaw += 2 * math.pi
+
+            self.total_radians += delta_yaw
+            self.prev_yaw = yaw
+            if abs(self.total_radians) < (self.desired_angular - 0.0873):
+                self.get_logger().info('TURNING')
+                self.cmd.linear.x = 0.0
+                self.cmd.angular.z = self.angular_speed
+                self.turtlebot_turning = False
+                self.publisher_.publish(self.cmd)
+                self.turtlebot_moving = True
+            else:
+                self.get_logger().info('Angle reached, STOP')
+                self.cmd.linear.x = 0.0
+                self.cmd.angular.z = 0.0
+                self.turtlebot_turning = False
+                self.publisher_.publish(self.cmd)
+                self.turtlebot_moving = True
+
+            # Log the accumulated angular distance
+            self.get_logger().info('TOTAL ANGULAR DISTANCE: "%s"' % abs(self.total_radians))
         
-        # Display the message on the console
-        self.get_logger().info('Publishing: "%s"' % self.cmd)
- 
 
 
 def main(args=None):
