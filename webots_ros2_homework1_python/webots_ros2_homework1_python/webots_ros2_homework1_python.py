@@ -36,10 +36,10 @@ class RandomWalk(Node):
         self.distance = True # Used to switch between angular/distance
         self.startx = -1000.0
         self.starty = -1000.0
-        self.desired_distance = 1.0 # Enter meter distance you want traveled
-        self.desired_angular = 3.14 # Enter radians turned
+        self.desired_distance = 5.0 # Enter meter distance you want traveled
+        self.desired_angular = 6.28 # Enter radians turned
         self.speed = 0.15 # Enter linear speed for robot m/s -> .15 or .075
-        self.angular_speed = 0.5236 # Angular speed r/s -> 0.5236 for 30 dps | 2.094 for 120 dps
+        self.angular_speed = .5236 # Angular speed r/s -> 0.5236 for 30 dps | 2.094 for 120 dps
         self.orientation=''
         self.start_yaw = -5
         self.total_radians=''
