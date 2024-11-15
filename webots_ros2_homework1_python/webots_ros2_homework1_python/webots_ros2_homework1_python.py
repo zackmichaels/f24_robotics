@@ -12,7 +12,6 @@ import math
 import time
 from rclpy.duration import Duration
 import random
-import pandas as pd
 
 
 
@@ -121,22 +120,8 @@ class RandomWalk(Node):
             self.prevy = self.pose_saved.y
         
         if front_lidar_min < (SAFE_STOP_DISTANCE + 0.35) :
-            
-            if (self.random_turn % 8 == 0):
-                self.get_logger().info('RANDOM TURN')
-                randomNum = random.randint(0,1)
-                if (randomNum == 0) and (self.turtlebot_turning == False):
-                    self.get_logger().info('RANDOM L')
-                    self.cmd.angular.z = 0.1      # Turn left at 0.5 rad/s
-                    self.turtlebot_turning = True
-                    self.random_turn = self.random_turn + 1
-                elif (self.turtlebot_turning == False):
-                    self.get_logger().info('RANDOM R')
-                    self.cmd.angular.z = -0.1  # Turn right at 0.5 rad/s
-                    self.turtlebot_turning = True
-                    self.random_turn = self.random_turn + 1
 
-            elif (left_lidar_min > right_lidar_min) and (self.turtlebot_turning == False): #and left_lidar_min > front_lidar_min
+            if (left_lidar_min > right_lidar_min) and (self.turtlebot_turning == False): #and left_lidar_min > front_lidar_min
                 self.get_logger().info('left lidar greatest distance!')
 
                 # if left_lidar_min > front_lidar_min:
@@ -188,7 +173,7 @@ class RandomWalk(Node):
         #         self.turtlebot_moving = True
         else: # choose furthest available route
                 self.get_logger().info('Free range, just runnin')
-                self.cmd.linear.x = 0.3
+                self.cmd.linear.x = 0.22
                 self.cmd.angular.z = 0.0
                 self.turtlebot_turning = False
                 self.publisher_.publish(self.cmd)
