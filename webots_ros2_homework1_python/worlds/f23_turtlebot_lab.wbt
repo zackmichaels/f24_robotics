@@ -1,4 +1,5 @@
-#VRML_SIM R2023a utf8
+#VRML_SIM R2023b utf8
+
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/devices/robotis/protos/RobotisLds01.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/cabinet/protos/Cabinet.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/master/projects/objects/tables/protos/Table.proto"
@@ -11,8 +12,6 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/project
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/robots/robotis/turtlebot/protos/TurtleBot3Burger.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/lights/protos/CeilingLight.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/objects/cabinet/protos/CabinetHandle.proto"
-EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/robots/adept/pioneer3/protos/Pioneer3dx.proto"
-EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/devices/microsoft/protos/Kinect.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2023b/projects/appearances/protos/PaintedWood.proto"
 
 WorldInfo {
@@ -22,12 +21,11 @@ WorldInfo {
   basicTimeStep 16
 }
 Viewpoint {
-  orientation -0.147 -0.461 0.875 5.58
-  position -7.84 -5.72 0.285
+  orientation 0.23557386618686646 -0.9040312749552373 -0.3566965201296201 5.024046569633312
+  position -17.761753308978136 -12.398720731972796 39.95675928092243
   exposure 0.5
   follow "TurtleBot3Burger:LDS-01"
 }
-
 TurtleBot3Burger {
   translation -7.3611 -6.0432 0
   controller "<extern>"
@@ -47,7 +45,6 @@ TurtleBot3Burger {
     }
   ]
 }
-
 CeilingLight {
   translation -6.4341 -1.0406 5
   name "ceiling light 1"
@@ -269,10 +266,10 @@ Wall {
   }
 }
 Wall {
-  translation -8.19 -0.47 0.05
+  translation -6.96 -1.44 0.05
   rotation 0 0 1 -1.5707953071795862
   name "cube1 wall outside"
-  size 0.076 1.35 1.5
+  size 0.076 7 1.5
   appearance PaintedWood {
     colorOverride 0.34 0.4 0.46
   }
@@ -296,10 +293,10 @@ Wall {
   }
 }
 Wall {
-  translation -4.98 -0.49 0.05
-  rotation 0 0 1 -1.5707953071795862
+  translation -2.93294 -1.76428 0.05
+  rotation 0 0 1 -2.094395307179586
   name "cube2 wall inside"
-  size 0.076 1.35 1.5
+  size 0.076 2 1.5
   appearance PaintedWood {
     colorOverride 0.34 0.4 0.46
   }
@@ -630,5 +627,3 @@ DEF DESKSIDE Solid {
   name "deskside(1)"
   boundingObject USE DESKSIDE
 }
-
-
