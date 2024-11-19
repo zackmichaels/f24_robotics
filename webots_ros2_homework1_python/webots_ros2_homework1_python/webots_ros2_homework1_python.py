@@ -19,7 +19,7 @@ import random
 
 
 LINEAR_VEL = 0.22
-STOP_DISTANCE = 0.2
+STOP_DISTANCE = 0.3
 LIDAR_ERROR = 0.05
 LIDAR_AVOID_DISTANCE = 0.7
 SAFE_STOP_DISTANCE = STOP_DISTANCE + LIDAR_ERROR
@@ -82,15 +82,17 @@ class RandomWalk(Node):
         scan = msg1.ranges
         self.scan_cleaned = []
 
-        #self.get_logger().info('scan: "%s"' % scan)
+        self.get_logger().info('len: "%s"' % len(scan))
         # Assume 360 range measurements
         for reading in scan:
             if reading == float('Inf'):
                 self.scan_cleaned.append(3.5)
             elif math.isnan(reading):
-                self.scan_cleaned.append(0.0)
+                self.scan_cleaned.append(.01)
+            elif reading == float(0):
+                self.scan_cleaned.append(10.0)
             else:
-            	self.scan_cleaned.append(reading)
+                self.scan_cleaned.append(reading)
 
 
 
@@ -105,7 +107,7 @@ class RandomWalk(Node):
         # similarly for twist message if you need
         self.pose_saved=position
         self.orientation=orientation
-       
+
         #Example of how to identify a stall..need better tuned position deltas; wheels spin and example fast
         #diffX = math.fabs(self.pose_saved.x- position.x)
         #diffY = math.fabs(self.pose_saved.y - position.y)
@@ -113,17 +115,20 @@ class RandomWalk(Node):
            #self.stall = True
         #else:
            #self.stall = False
-           
+
         return None
-       
+
     def timer_callback(self):
         if (len(self.scan_cleaned)==0):
             self.turtlebot_moving = False
             return
-       
-        left_lidar_min = min(self.scan_cleaned[LEFT_SIDE_INDEX:LEFT_FRONT_INDEX])
-        right_lidar_min = min(self.scan_cleaned[RIGHT_FRONT_INDEX:RIGHT_SIDE_INDEX])
-        front_lidar_min = min(self.scan_cleaned[LEFT_FRONT_INDEX:RIGHT_FRONT_INDEX])
+
+        #left_lidar_min = min(self.scan_cleaned[LEFT_SIDE_INDEX:LEFT_FRONT_INDEX])
+        #right_lidar_min = min(self.scan_cleaned[RIGHT_FRONT_INDEX:RIGHT_SIDE_INDEX])
+        #front_lidar_min = min(self.scan_cleaned[LEFT_FRONT_INDEX:RIGHT_FRONT_INDEX])
+        right_lidar_min = min(self.scan_cleaned[270:330])
+        left_lidar_min = min(self.scan_cleaned[30:90])
+        front_lidar_min = min(self.scan_cleaned[330:359] + self.scan_cleaned[0:30])
 
 
         self.get_logger().info('left scan slice: "%s"'%  left_lidar_min)
@@ -142,52 +147,6 @@ class RandomWalk(Node):
             self.prevy = 0.0#self.pose_saved.y
 
 
-        if (self.cycle_count % 50 == 0) :
-            siny_cosp = 2 * (self.orientation.w * self.orientation.z + self.orientation.x * self.orientation.y)
-            cosy_cosp = 1 - 2 * (self.orientation.y * self.orientation.y + self.orientation.z * self.orientation.z)
-            yaw = math.atan2(siny_cosp, cosy_cosp)
-
-
-            if self.start_yaw < -4:
-                self.start_yaw = yaw
-                self.prev_yaw = yaw
-                self.total_radians = 0.0
-
-
-            delta_yaw = yaw - self.prev_yaw
-
-
-            if delta_yaw > math.pi:
-                delta_yaw -= 2 * math.pi
-            elif delta_yaw < -math.pi:
-                delta_yaw += 2 * math.pi
-
-
-            self.total_radians += delta_yaw
-            self.prev_yaw = yaw
-            if abs(self.total_radians) < (6.28 - 0.0873):
-                self.get_logger().info('360TURNING')
-                self.cmd.linear.x = 0.0
-                self.cmd.angular.z = 0.30
-                self.turtlebot_turning = False
-                self.publisher_.publish(self.cmd)
-                self.turtlebot_moving = True
-            else:
-                self.get_logger().info('Angle reached, STOP')
-                self.cmd.linear.x = 0.0
-                self.cmd.angular.z = 0.0
-                self.total_radians = 0.0
-                self.turtlebot_turning = False
-                self.publisher_.publish(self.cmd)
-                self.turtlebot_moving = True
-                self.cycle_count = self.cycle_count + 1
-
-
-            # Log the accumulated angular distance
-
-
-            return
-       
         if front_lidar_min < (SAFE_STOP_DISTANCE + 0.35) :
 
 
@@ -202,7 +161,7 @@ class RandomWalk(Node):
                 self.random_turn = self.random_turn + 1
                 #self.publisher_.publish(self.cmd)
                 #self.turtlebot_moving = True
-               
+
             elif (right_lidar_min > left_lidar_min) and (self.turtlebot_turning == False): #and right_lidar_min > front_lidar_min
                 self.get_logger().info('right lidar greatest distance!')
 
@@ -240,7 +199,7 @@ class RandomWalk(Node):
         #         self.turtlebot_moving = True
         else: # choose furthest available route
                 self.get_logger().info('Free range, just runnin')
-                self.cmd.linear.x = 0.22
+                self.cmd.linear.x = 0.20
                 self.cmd.angular.z = 0.0
                 self.turtlebot_turning = False
                 self.cycle_count = self.cycle_count + 1
@@ -248,9 +207,9 @@ class RandomWalk(Node):
                 self.turtlebot_moving = True
 
 
-                self.total_distance = self.total_distance + math.sqrt((self.pose_saved.x - self.prevx)**2 + (self.pose_saved.y - self.prevy)**2)
-                self.prevx = self.pose_saved.x
-                self.prevy = self.pose_saved.y
+                #self.total_distance = self.total_distance + math.sqrt((self.pose_saved.x - self.prevx)**2 + (self.pose_saved.y - self.prevy)**2)
+                #self.prevx = self.pose_saved.x
+                #self.prevy = self.pose_saved.y
 
 
                 #self.x_y_values.append({'Column 1': self.pose_saved.x, 'Column 2': self.pose_saved.y})
@@ -260,16 +219,16 @@ class RandomWalk(Node):
                 return
 
 
-           
+
         self.get_logger().info('Distance of the obstacle : %f' % front_lidar_min)
         self.get_logger().info('I receive: "%s"' %
                                str(self.odom_data))
         if self.stall == True:
            self.get_logger().info('Stall reported')
-       
+
         # Display the message on the console
         self.get_logger().info('Publishing: "%s"' % self.cmd)
- 
+
 
 
 
@@ -293,6 +252,5 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
-
 
 
