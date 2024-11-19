@@ -79,11 +79,19 @@ class RandomWalk(Node):
 
 
     def listener_callback1(self, msg1):
-        #self.get_logger().info('scan: "%s"' % msg1.ranges)
-        self.scan_cleaned = msg1.ranges
-       
+        scan = msg1.ranges
+        self.scan_cleaned = []
+
         #self.get_logger().info('scan: "%s"' % scan)
         # Assume 360 range measurements
+        for reading in scan:
+            if reading == float('Inf'):
+                self.scan_cleaned.append(3.5)
+            elif math.isnan(reading):
+                self.scan_cleaned.append(0.0)
+            else:
+            	self.scan_cleaned.append(reading)
+
 
 
 
